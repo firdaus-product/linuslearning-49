@@ -3,181 +3,164 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Kemahiran Pemulihan: Meneroka Nombor 1–1000</title>
+  <title>Kemahiran Pemulihan: Nombor 1-1000</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
   <style>
-    body { box-sizing: border-box; }
-    .activity-card { min-height: 400px; }
-    .number-card { transition: all .3s ease; cursor: pointer; }
-    .number-card:hover { transform: scale(1.05); }
-    .dragging { opacity: .5; transform: rotate(5deg); }
+    /* --- UI STYLE (MASTER REFERENCE - TEMA HIJAU) --- */
+    body { 
+        font-family: 'Fredoka', sans-serif; 
+        background-color: #f0fdf4; 
+        background-image: radial-gradient(#86efac 2px, transparent 2px); 
+        background-size: 30px 30px; 
+    }
+    
+    .game-card { 
+        background: white; 
+        border: 4px solid #475569; 
+        box-shadow: 8px 8px 0px #00000020; 
+        border-radius: 1.5rem; 
+        min-height: 600px; 
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+    }
+    
+    /* Buttons */
+    .btn-3d { 
+        transition: all 0.1s; 
+        border-bottom-width: 6px; 
+        border-color: rgba(0,0,0,0.2); 
+        transform: translateY(0); 
+        cursor: pointer; 
+        display: inline-block; 
+    }
+    .btn-3d:active:not(:disabled) { transform: translateY(4px); border-bottom-width: 2px; box-shadow: none; }
+    .btn-3d:disabled { opacity: 0.6; cursor: not-allowed; border-bottom-width: 6px; filter: grayscale(100%); }
 
-    /* Drop zone */
-    .drop-zone {
-      border: 2px dashed #cbd5e1;
-      transition: all .3s ease;
-      min-width: 60px;
-      min-height: 60px;
-      display: inline-block;
-      vertical-align: middle;
-    }
-    .drop-zone.drag-over { border-color: #3b82f6; background-color: #eff6ff; }
+    /* Animation */
+    .shake { animation: shake 0.4s ease-in-out; border-color: #ef4444 !important; background-color: #fee2e2 !important; }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px) rotate(-5deg); } 75% { transform: translateX(8px) rotate(5deg); } }
 
-    /* Salah */
-    @keyframes shake {
-      0% { transform: translateX(0); }
-      25% { transform: translateX(-5px); }
-      50% { transform: translateX(5px); }
-      75% { transform: translateX(-5px); }
-      100% { transform: translateX(0); }
+    /* --- STYLE KHUSUS NOMBOR --- */
+    
+    /* Drag & Drop */
+    .draggable { cursor: grab; user-select: none; transition: transform 0.2s; }
+    .draggable:active { cursor: grabbing; transform: scale(1.1); }
+    
+    .drop-zone { 
+        border: 3px dashed #94a3b8; background-color: #f8fafc; 
+        transition: all .3s ease; border-radius: 0.75rem; 
+        display: flex; align-items: center; justify-content: center;
+        font-weight: bold; color: #334155; min-height: 60px;
     }
-    .shake { animation: shake 0.5s ease; }
+    .drop-zone.drag-over { border-color: #3b82f6; background-color: #dbeafe; transform: scale(1.05); }
+    .drop-zone-filled { border-style: solid; border-color: #4ade80; background-color: #f0fdf4; color: #15803d; }
 
-    /* Zon sudah diisi */
-    .drop-zone-filled {
-      border-style: solid;
-      border-color: #4ade80;
-      background-color: #f0fdf4;
+    /* Grid Nombor (Activity 1) */
+    .grid-btn {
+        padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; font-weight: bold;
+        background: #e0e7ff; color: #4338ca; border: 2px solid transparent;
+        cursor: pointer; transition: all 0.2s;
     }
+    .grid-btn:hover { background: #c7d2fe; }
+    .grid-btn.active { background: #4f46e5; color: white; border-color: #312e81; transform: scale(1.05); }
 
-    /* Aktiviti 1 - Petak 1000 */
-    .grid-tab {
-      padding: 8px 16px; border-radius: 8px; font-weight: 600;
-      background-color: #e0e7ff; color: #4338ca;
+    .num-cell {
+        aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+        border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.85rem; font-weight: 600;
+        cursor: pointer; transition: all 0.1s;
     }
-    .grid-tab.active { background-color: #4f46e5; color: white; }
-    .grid-cell {
-      width: calc(10% - 8px); height: 40px; margin: 4px;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 600; border: 1px solid #d1d5db; border-radius: 6px;
-      cursor: pointer; transition: all .2s ease;
+    .num-cell:hover { background: #fef08a; border-color: #eab308; transform: scale(1.1); z-index: 10; }
+    .num-cell.selected { background: #facc15; border-color: #a16207; color: #422006; font-weight: 800; transform: scale(1.1); }
+
+    /* Number Card (Activity 5) */
+    .num-card {
+        background: white; border: 2px solid #fca5a5; border-radius: 0.75rem; color: #991b1b;
+        padding: 1rem; font-weight: bold; cursor: grab; font-size: 1.5rem;
+        box-shadow: 4px 4px 0 rgba(0,0,0,0.1); transition: transform 0.1s;
     }
-    .grid-cell:hover { background-color: #fef3c7; border-color: #fcd34d; }
-    .grid-cell.selected { background-color: #fcd34d; border-color: #f59e0b; }
+    .num-card:active { transform: scale(0.95); cursor: grabbing; }
+
   </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-full">
+<body class="min-h-screen text-slate-800 pb-10">
 
-  <div class="bg-yellow-100 border-b-4 border-yellow-300 p-4 shadow-sm sticky top-0 z-10">
-    <div class="max-w-6xl mx-auto flex items-center justify-between">
+  <div class="fixed top-4 left-0 right-0 z-50 px-4 pointer-events-none">
+    <div class="max-w-4xl mx-auto bg-green-400 border-4 border-green-600 rounded-full px-6 py-3 shadow-xl flex items-center justify-between pointer-events-auto transform hover:scale-[1.01] transition-transform">
       <div class="flex items-center gap-3">
-        <span class="text-2xl">📚</span>
-        <span id="info-text" class="text-lg font-semibold text-gray-800">
-          Pilih aktiviti untuk mula belajar nombor!
-        </span>
+        <span class="text-3xl animate-bounce">🔢</span>
+        <span id="info-text" class="text-xl font-bold text-green-900 leading-none mt-1">Pilih aktiviti untuk mula!</span>
       </div>
-      <button id="speak-btn"
-              class="bg-yellow-300 hover:bg-yellow-400 text-yellow-800 font-bold py-2 px-4 rounded-full text-xl transition-colors duration-200"
-              onclick="speakInfo()">
-        🔊
-      </button>
+      <button id="speak-btn" onclick="speakInfo()" class="bg-white hover:bg-green-50 text-green-600 border-2 border-green-200 rounded-full p-2 transition-colors shadow-sm">🔊</button>
     </div>
   </div>
+  <div class="h-24"></div>
 
-  <div class="max-w-6xl mx-auto p-6">
-    <div class="bg-white rounded-xl shadow-lg p-6 mb-6 activity-card flex items-center justify-center">
-      <div id="activity-content" class="text-center w-full">
-        <div class="py-16">
-          <div class="text-6xl mb-4">🔢</div>
-          <h2 class="text-3xl font-bold text-gray-800 mb-4">
-            Kemahiran Pemulihan: Meneroka Nombor 1–1000
-          </h2>
-          <p class="text-xl text-gray-600 mb-8">
-            Pilih aktiviti di bawah untuk meneroka sebutan dan nilai nombor.
-          </p>
-          <div class="text-4xl">👇</div>
+  <div class="max-w-6xl mx-auto p-4">
+    
+    <div class="game-card p-8 mb-8">
+        <div id="activity-content" class="w-full relative z-10 flex flex-col items-center justify-center h-full transition-opacity duration-200">
+            <div class="py-10 text-center">
+                <div class="text-8xl mb-6 animate-pulse">💯</div>
+                <h2 class="text-5xl font-bold text-emerald-600 mb-4">Dunia Nombor</h2>
+                <p class="text-2xl text-slate-500 mb-8 font-semibold">Teroka nombor 1 hingga 1000.</p>
+                <div class="text-4xl animate-bounce">👇</div>
+            </div>
         </div>
-      </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-lg p-6">
-      <h3 class="text-2xl font-bold text-gray-800 mb-4 text-center">Pilih Aktiviti</h3>
-      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-        <button onclick="loadActivity(1)"
-                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">
-          🎯 Petak 1000
-        </button>
-        <button onclick="loadActivity(2)"
-                class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">
-          🏗️ Pembina Nombor
-        </button>
-        <button onclick="loadActivity(3)"
-                class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">
-          ✍️ Penterjemah Nombor
-        </button>
-        <button onclick="loadActivity(4)"
-                class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">
-          🎲 Penjana Rawak
-        </button>
-        <button onclick="loadActivity(5)"
-                class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">
-          🧩 Suai Padan
-        </button>
+    <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg p-6 border-2 border-white">
+      <h3 class="text-2xl font-bold text-slate-700 mb-4 text-center">🎮 Pilih Aktiviti</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+        <button onclick="loadActivity(1)" class="btn-3d bg-blue-500 text-white font-bold py-4 px-2 rounded-xl text-lg">🎯 Petak 1000</button>
+        <button onclick="loadActivity(2)" class="btn-3d bg-green-500 text-white font-bold py-4 px-2 rounded-xl text-lg">🏗️ Bina Nombor</button>
+        <button onclick="loadActivity(3)" class="btn-3d bg-purple-500 text-white font-bold py-4 px-2 rounded-xl text-lg">✍️ Eja Nombor</button>
+        <button onclick="loadActivity(4)" class="btn-3d bg-orange-500 text-white font-bold py-4 px-2 rounded-xl text-lg">🎲 Nombor Rawak</button>
+        <button onclick="loadActivity(5)" class="btn-3d bg-red-500 text-white font-bold py-4 px-2 rounded-xl text-lg">🧩 Suai Padan</button>
       </div>
 
-      <div class="flex justify-center gap-4">
-        <button onclick="clearActivity()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg text-lg transition-colors duration-200">
-          🧹 Bersih
-        </button>
-        <button onclick="nextActivity()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg text-lg transition-colors duration-200">
-          ➡️ Seterusnya
-        </button>
+      <div class="flex justify-center gap-4 border-t-2 border-slate-100 pt-6">
+        <button onclick="clearActivity()" class="btn-3d bg-slate-400 text-white font-bold py-2 px-6 rounded-full text-lg">🏠 Menu</button>
+        <button onclick="nextActivity()" class="btn-3d bg-indigo-500 text-white font-bold py-2 px-8 rounded-full text-xl">Seterusnya ➡️</button>
       </div>
     </div>
   </div>
 
   <script>
+    /* --- STANDARD HELPERS --- */
     let currentActivity = 0;
     let ttsEnabled = false;
     let currentInfo = "Pilih aktiviti untuk mula belajar nombor!";
     let draggedElement = null;
-    let ttsTimeout = null; 
 
-    /* ====== TTS ====== */
-    function speak(text) {
-      if (!ttsEnabled) return;
-      if (!('speechSynthesis' in window)) return;
-      
-      window.speechSynthesis.cancel(); 
+    function triggerWin() { confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } }); }
 
-      if (ttsTimeout) {
-        clearTimeout(ttsTimeout);
-      }
-
-      ttsTimeout = setTimeout(() => {
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'ms-MY';
-        u.rate = 0.9; u.pitch = 1.05;
-        const voices = window.speechSynthesis.getVoices();
-        const ms = voices.find(v => v.lang === 'ms-MY' || v.lang?.startsWith('ms'));
-        if (ms) u.voice = ms;
-
-        u.onend = () => { ttsTimeout = null; };
-        u.onerror = () => { ttsTimeout = null; };
-
-        window.speechSynthesis.speak(u);
-        ttsTimeout = null; 
-      }, 100); 
+    function speak(text) { 
+        if (!ttsEnabled || !('speechSynthesis' in window)) return; 
+        window.speechSynthesis.cancel(); 
+        const u = new SpeechSynthesisUtterance(text); u.lang = 'ms-MY'; u.rate = 0.95; u.pitch = 1.05; 
+        const ms = window.speechSynthesis.getVoices().find(v => v.lang === 'ms-MY' || v.lang?.startsWith('ms')); 
+        if (ms) u.voice = ms; 
+        window.speechSynthesis.speak(u); 
+    }
+    
+    function setInfo(text) { 
+        currentInfo = text; const infoEl = document.getElementById('info-text'); 
+        infoEl.style.opacity = 0; setTimeout(() => { infoEl.textContent = text; infoEl.style.opacity = 1; }, 200); 
+    }
+    
+    function speakInfo() { 
+        if (!ttsEnabled) { ttsEnabled = true; document.getElementById('speak-btn').classList.add('bg-green-100', 'text-green-600'); } 
+        speak(currentInfo); 
     }
 
-    function setInfo(text) { currentInfo = text; document.getElementById('info-text').textContent = text; }
-    function speakInfo() {
-      if (!ttsEnabled) {
-        ttsEnabled = true;
-        const btn = document.getElementById('speak-btn');
-        btn.classList.add('bg-green-300', 'hover:bg-green-400');
-        btn.classList.remove('bg-yellow-300', 'hover:bg-yellow-400');
-      }
-      speak(currentInfo);
-    }
-
-    /* ====== DnD helpers ====== */
-    function dragStart(e) { draggedElement = e.target; e.target.classList.add('dragging'); }
-    function dragEnd(e) { e.target.classList.remove('dragging'); document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('drag-over')); }
-    function allowDrop(e) { e.preventDefault(); if (e.currentTarget.classList.contains('drop-zone')) e.currentTarget.classList.add('drag-over'); }
-    function dragLeave(e) { if (e.currentTarget.classList.contains('drop-zone')) e.currentTarget.classList.remove('drag-over'); }
-
-    /* ====== HELPER: Number to Words (1-1000) ====== */
+    /* --- LOGIK MATEMATIK (Number to Words) --- */
     function numToWords(n) {
       n = parseInt(n);
       if (isNaN(n) || n < 0) return "";
@@ -189,308 +172,274 @@
       const TENS = ["", "", "dua puluh", "tiga puluh", "empat puluh", "lima puluh", "enam puluh", "tujuh puluh", "lapan puluh", "sembilan puluh"];
 
       let words = "";
-      
       const ratus = Math.floor(n / 100);
-      if (ratus > 0) {
-        words += (ratus === 1 ? "seratus" : ONES[ratus] + " ratus");
-      }
+      if (ratus > 0) words += (ratus === 1 ? "seratus" : ONES[ratus] + " ratus");
 
       const remainder = n % 100;
       if (remainder > 0) {
         if (ratus > 0) words += " ";
-        if (remainder < 10) {
-          words += ONES[remainder];
-        } else if (remainder < 20) {
-          words += TEENS[remainder - 10];
-        } else {
+        if (remainder < 10) words += ONES[remainder];
+        else if (remainder < 20) words += TEENS[remainder - 10];
+        else {
           words += TENS[Math.floor(remainder / 10)];
           const sa = remainder % 10;
-          if (sa > 0) {
-            words += " " + ONES[sa];
-          }
+          if (sa > 0) words += " " + ONES[sa];
         }
       }
       return words;
     }
 
-    /* ====== Router ====== */
+    /* --- DRAG & DROP HELPERS --- */
+    window.dragStart = function(e) { draggedElement = e.target; e.target.classList.add('opacity-50'); }
+    window.dragEnd = function(e) { if(e.target) e.target.classList.remove('opacity-50'); document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('drag-over')); }
+    window.allowDrop = function(e) { e.preventDefault(); if (e.currentTarget.classList.contains('drop-zone')) e.currentTarget.classList.add('drag-over'); }
+    window.dragLeave = function(e) { if (e.currentTarget.classList.contains('drop-zone')) e.currentTarget.classList.remove('drag-over'); }
+
+    /* --- ROUTER --- */
     function loadActivity(n) {
       currentActivity = n;
       const content = document.getElementById('activity-content');
-      if (n === 1) return loadNumberGridActivity(content);
-      if (n === 2) return loadNumberBuilderActivity(content);
-      if (n === 3) return loadTranslatorActivity(content);
-      if (n === 4) return loadRandomNumberActivity(content);
-      if (n === 5) return loadMatchingActivity(content);
+      content.style.opacity = 0;
+      setTimeout(() => {
+          if (n === 1) loadNumberGridActivity(content);
+          if (n === 2) loadNumberBuilderActivity(content);
+          if (n === 3) loadTranslatorActivity(content);
+          if (n === 4) loadRandomNumberActivity(content);
+          if (n === 5) loadMatchingActivity(content);
+          content.style.opacity = 1;
+      }, 200);
     }
 
-    /* ====== Aktiviti 1: Petak 1000 ====== */
-    function loadNumberGridActivity(content) {
-      setInfo("Pilih julat nombor, kemudian klik mana-mana nombor untuk mendengar sebutannya.");
-      content.innerHTML = `
-        <h3 class="text-2xl font-bold text-blue-600 mb-4">🎯 Petak 1000</h3>
-        <div id="grid-tabs" class="flex flex-wrap justify-center gap-2 mb-4">
-          ${[0, 100, 200, 300, 400, 500, 600, 700, 800, 900].map(start => `
-            <button class="grid-tab" onclick="generateGrid(${start + 1}, ${start + 100})">
-              ${start + 1}–${start + 100}
-            </button>
-          `).join('')}
-        </div>
-        <div id="number-grid" class="flex flex-wrap justify-center bg-white p-2 rounded-lg shadow-inner">
-          <p class="text-gray-500 p-8">Pilih julat di atas untuk mula.</p>
-        </div>
-      `;
-      // Auto-load grid pertama
-      generateGrid(1, 100);
-      content.querySelector('.grid-tab').classList.add('active');
-    }
-    function generateGrid(start, end) {
-      // Kemas kini tab aktif
-      document.querySelectorAll('#grid-tabs .grid-tab').forEach(tab => {
-        tab.classList.remove('active');
-        if (tab.textContent.startsWith(start + '–')) {
-          tab.classList.add('active');
-        }
-      });
-      // Jana grid
-      const grid = document.getElementById('number-grid');
-      grid.innerHTML = '';
-      for (let i = start; i <= end; i++) {
-        const cell = document.createElement('div');
-        cell.className = 'grid-cell';
-        cell.textContent = i;
-        cell.onclick = () => clickGridNumber(i, cell);
-        grid.appendChild(cell);
-      }
-      setInfo(`Meneroka nombor ${start} hingga ${end}. Klik satu nombor.`);
-    }
-
-    function clickGridNumber(num, el) {
-      document.querySelectorAll('#number-grid .grid-cell').forEach(c => c.classList.remove('selected'));
-      el.classList.add('selected');
-      const words = numToWords(num);
-      const infoMsg = `${num}: ${words}.`; 
-      const speakMsg = `Sebutannya ${words}.`; 
-      setInfo(infoMsg);
-      speak(speakMsg);
-    }
-
-    /* ====== Aktiviti 2: Pembina Nombor ====== */
-    function loadNumberBuilderActivity(content) {
-      setInfo("Gunakan menu untuk membina nombor dan lihat hasilnya.");
-      content.innerHTML = `
-        <h3 class="text-2xl font-bold text-green-600 mb-6">🏗️ Pembina Nombor (Nilai Tempat)</h3>
-        <div class="flex flex-wrap justify-center gap-4 mb-6">
-          <div classs="flex-1">
-            <label for="select-ratus" class="text-lg font-semibold text-gray-700">Ratus</label>
-            <select id="select-ratus" onchange="updateNumberBuilder()" class="text-2xl p-3 border-2 border-gray-300 rounded-lg w-full">
-              ${[...Array(10).keys()].map(i => `<option value="${i}">${i}</option>`).join('')}
-            </select>
-          </div>
-          <div classs="flex-1">
-            <label for="select-puluh" class="text-lg font-semibold text-gray-700">Puluh</label>
-            <select id="select-puluh" onchange="updateNumberBuilder()" class="text-2xl p-3 border-2 border-gray-300 rounded-lg w-full">
-              ${[...Array(10).keys()].map(i => `<option value="${i}">${i}</option>`).join('')}
-            </select>
-          </div>
-          <div classs="flex-1">
-            <label for="select-sa" class="text-lg font-semibold text-gray-700">Sa</label>
-            <select id="select-sa" onchange="updateNumberBuilder()" class="text-2xl p-3 border-2 border-gray-300 rounded-lg w-full">
-              ${[...Array(10).keys()].map(i => `<option value="${i}">${i}</option>`).join('')}
-            </select>
-          </div>
-        </div>
-        <div id="builder-result" class="bg-green-50 border-2 border-green-200 p-6 rounded-xl text-center">
-          <div class="text-5xl font-bold text-green-800 mb-2">0</div>
-          <div class="text-xl font-semibold text-green-700">kosong</div>
-          <button class="mt-4 bg-green-200 text-green-800 px-4 py-2 rounded-full font-semibold" onclick="speak('Sebutannya kosong.')">🔊 Sebut</button>
-        </div>
-      `;
-      updateNumberBuilder();
-    }
-    function updateNumberBuilder() {
-      const r = parseInt(document.getElementById('select-ratus').value) || 0;
-      const p = parseInt(document.getElementById('select-puluh').value) || 0;
-      const s = parseInt(document.getElementById('select-sa').value) || 0;
-      const total = r * 100 + p * 10 + s;
-      const words = numToWords(total);
-      
-      const resultEl = document.getElementById('builder-result');
-      resultEl.innerHTML = `
-        <div id="builder-result-num" class="text-5xl font-bold text-green-800 mb-2">${total}</div>
-        <div class="text-xl font-semibold text-green-700">${words}</div>
-        <button class="mt-4 bg-green-200 text-green-800 px-4 py-2 rounded-full font-semibold" onclick="speak('Sebutannya ${words}.')">🔊 Sebut</button>
-      `;
-      setInfo(`Binaan nombor: ${total}. Sebutan: ${words}.`);
-    }
-
-    /* ====== Aktiviti 3: Penterjemah Nombor ====== */
-    function loadTranslatorActivity(content) {
-      setInfo("Taip nombor dalam kotak untuk melihat sebutannya.");
-      content.innerHTML = `
-        <h3 class="text-2xl font-bold text-purple-600 mb-6">✍️ Penterjemah Angka ke Perkataan</h3>
-        <div class="w-full max-w-md mx-auto">
-          <label for="input-angka" class="text-lg font-semibold text-gray-700">Taip Angka (0-1000):</label>
-          <input type="number" id="input-angka" min="0" max="1000" oninput="updateTranslator()" 
-                 class="w-full text-4xl p-4 border-2 border-purple-300 rounded-lg text-center font-bold" 
-                 placeholder="cth: 452">
-        </div>
-        <div id="translator-result" class="mt-6 bg-purple-50 border-2 border-purple-200 p-6 rounded-xl text-center min-h-32">
-          <p class="text-2xl font-semibold text-purple-700">...</p>
-        </div>
-      `;
-    }
-    function updateTranslator() {
-      const input = document.getElementById('input-angka');
-      let num = parseInt(input.value);
-      if (isNaN(num)) {
-        document.getElementById('translator-result').innerHTML = `<p class="text-2xl font-semibold text-purple-700">...</p>`;
-        return;
-      }
-      if (num > 1000) { num = 1000; input.value = 1000; }
-      if (num < 0) { num = 0; input.value = 0; }
-      
-      const words = numToWords(num);
-      document.getElementById('translator-result').innerHTML = `
-        <p class="text-3xl font-bold text-purple-800">${words}</p>
-        <button class="mt-4 bg-purple-200 text-purple-800 px-4 py-2 rounded-full font-semibold" onclick="speak('Sebutannya ${words}.')">🔊 Sebut</button>
-      `;
-      setInfo(`Angka ${num} disebut ${words}.`);
-    }
-
-    /* ====== Aktiviti 4: Penjana Rawak ====== */
-    function loadRandomNumberActivity(content) {
-      setInfo("Tekan butang untuk menjana nombor rawak (1-1000).");
-      content.innerHTML = `
-        <h3 class="text-2xl font-bold text-orange-600 mb-6">🎲 Penjana Nombor Rawak</h3>
-        <div id="random-result" class="bg-orange-50 border-2 border-orange-200 p-10 rounded-xl text-center min-h-48 flex flex-col justify-center items-center">
-          <p class="text-2xl font-semibold text-orange-700">Tekan butang di bawah.</p>
-        </div>
-        <button class="mt-6 bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-lg text-xl" 
-                onclick="generateRandomNumber()">
-          Jana Nombor Baru!
-        </button>
-      `;
-    }
-
-    function generateRandomNumber() {
-      const num = Math.floor(Math.random() * 1000) + 1; // 1 hingga 1000
-      const words = numToWords(num);
-      document.getElementById('random-result').innerHTML = `
-        <div class="text-7xl font-bold text-orange-800 mb-2">${num}</div>
-        <div class="text-2xl font-semibold text-orange-700">${words}</div>
-        <button class="mt-4 bg-orange-200 text-orange-800 px-4 py-2 rounded-full font-semibold" onclick="speak('Sebutannya ${words}.')">🔊 Sebut</button>
-      `;
-      const infoMsg = `Nombor rawak: ${num}. ${words}.`;
-      const speakMsg = `Sebutannya ${words}.`;
-      setInfo(infoMsg);
-      speak(speakMsg); 
-    }
-
-    /* ====== Aktiviti 5: Suai Padan ====== */
-    function loadMatchingActivity(content) {
-      setInfo("Seret kad angka (kiri) ke kad perkataan (kanan) yang sepadan.");
-      const pairs = [
-        { num: 125, words: "seratus dua puluh lima" },
-        { num: 340, words: "tiga ratus empat puluh" },
-        { num: 802, words: "lapan ratus dua" },
-        { num: 555, words: "lima ratus lima puluh lima" },
-        { num: 90,  words: "sembilan puluh" },
-      ];
-      const shuffled = [...pairs].sort(() => Math.random() - 0.5);
-
-      content.innerHTML = `
-        <h3 class="text-2xl font-bold text-red-600 mb-6">🧩 Suai Padan (Angka & Perkataan)</h3>
-        <div class="flex flex-col md:flex-row gap-6">
-          <div class="flex-1">
-            <h4 class="text-lg font-semibold mb-3 text-center">Kad Angka (Seret)</h4>
-            <div id="number-choices" class="flex flex-col items-center gap-4">
-              ${shuffled.map(pair => `
-                <div class="number-card bg-red-100 border-2 border-red-300 rounded-lg p-4 text-2xl font-bold text-red-800 cursor-move w-48 text-center"
-                     draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)" data-number="${pair.num}">
-                  ${pair.num}
-                </div>
-              `).join('')}
-            </div>
-          </div>
-          
-          <div class="w-full md:w-px bg-gray-300 h-px md:h-auto"></div>
-
-          <div class="flex-1">
-            <h4 class="text-lg font-semibold mb-3 text-center">Kad Perkataan (Letak di sini)</h4>
-            <div id="word-targets" class="flex flex-col items-center gap-4">
-              ${pairs.map(pair => `
-                <div class="drop-zone rounded-lg p-4 w-full md:w-72 text-lg font-semibold text-gray-700 text-center"
-                     ondrop="dropOnMatch(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" data-correct="${pair.num}">
-                  ${pair.words}
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      `;
-    }
-    
-    // ##### KEMAS KINI DI SINI #####
-    function dropOnMatch(e) {
-      e.preventDefault();
-      e.currentTarget.classList.remove('drag-over');
-      if (!draggedElement) return;
-
-      const draggedNumber = draggedElement.dataset.number;
-      const correctNumber = e.currentTarget.dataset.correct;
-
-      if (draggedNumber === correctNumber) {
-        e.currentTarget.innerHTML = `✅ ${draggedNumber} - ${e.currentTarget.textContent.trim()}`;
-        e.currentTarget.classList.add('drop-zone-filled');
-        e.currentTarget.classList.remove('drop-zone');
-        e.currentTarget.removeAttribute('ondrop');
-        draggedElement.remove();
-        draggedElement = null;
-        
-        // Perubahan di sini:
-        const infoMsg = `Betul! ${draggedNumber} ialah ${numToWords(draggedNumber)}.`;
-        const speakMsg = `Betul!`; // Audio dipendekkan
-        
-        setInfo(infoMsg);  // Papar mesej penuh
-        speak(speakMsg); // Sebut mesej pendek
-
-        if (document.querySelectorAll('#word-targets .drop-zone').length === 0) {
-          setInfo("Syabas! Semua berjaya dipadankan!");
-          speak("Syabas! Semua berjaya dipadankan!");
-        }
-      } else {
-        setInfo(`Bukan di situ. Cuba lagi.`);
-        speak(`Bukan di situ. Cuba lagi.`);
-        e.currentTarget.classList.add('shake');
-        setTimeout(() => e.currentTarget.classList.remove('shake'), 500);
-      }
-    }
-
-
-    /* ====== Kawalan Umum ====== */
     function clearActivity() {
-      currentActivity = 0;
-      document.getElementById('activity-content').innerHTML = `
-        <div class="text-center py-16">
-          <div class="text-6xl mb-4">🔢</div>
-          <h2 class="text-3xl font-bold text-gray-800 mb-4">Kemahiran Pemulihan: Meneroka Nombor 1–1000</h2>
-          <p class="text-xl text-gray-600 mb-8">Pilih aktiviti di bawah untuk meneroka sebutan dan nilai nombor.</p>
-          <div class="text-4xl">👇</div>
-        </div>
-      `;
-      setInfo("Pilih aktiviti untuk mula belajar nombor!");
+        currentActivity = 0;
+        document.getElementById('activity-content').innerHTML = `<div class="py-10 text-center"><div class="text-8xl mb-6 animate-pulse">💯</div><h2 class="text-5xl font-bold text-emerald-600 mb-4">Dunia Nombor</h2><p class="text-2xl text-slate-500 mb-8 font-semibold">Pilih butang di bawah.</p></div>`;
+        setInfo("Pilih aktiviti untuk mula belajar!");
     }
-    function nextActivity() {
-      if (currentActivity === 0) return loadActivity(1);
-      if (currentActivity < 5) return loadActivity(currentActivity + 1);
-      return loadActivity(1);
+    function nextActivity() { let next = currentActivity + 1; if (next > 5) next = 1; loadActivity(next); }
+
+
+    /* =========================================
+       LOGIK AKTIVITI
+       ========================================= */
+
+    /* 1. Petak 1000 */
+    function loadNumberGridActivity(content) {
+        setInfo("Pilih julat, kemudian klik nombor untuk dengar.");
+        const ranges = [0, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+        
+        content.innerHTML = `
+            <div class="w-full max-w-5xl text-center h-full flex flex-col">
+                <h3 class="text-3xl font-bold text-blue-600 mb-4">🎯 Petak 1000</h3>
+                
+                <div id="grid-tabs" class="flex flex-wrap justify-center gap-2 mb-4">
+                    ${ranges.map(start => `
+                        <button class="grid-btn" onclick="generateGrid(${start + 1}, ${start + 100}, this)">
+                            ${start + 1}-${start + 100}
+                        </button>
+                    `).join('')}
+                </div>
+
+                <div id="number-grid" class="grid grid-cols-10 gap-1 bg-white p-3 rounded-xl shadow-inner border-2 border-slate-200 mx-auto max-w-2xl">
+                    <p class="col-span-10 text-slate-400 py-10">Sila pilih butang di atas.</p>
+                </div>
+            </div>
+        `;
+        // Auto load first
+        setTimeout(() => generateGrid(1, 100, content.querySelector('.grid-btn')), 100);
     }
 
-    // Kekalkan TTS resume pada sesetengah pelayar
-    if ('speechSynthesis' in window) {
-      setInterval(() => { if (window.speechSynthesis.paused) window.speechSynthesis.resume(); }, 1000);
+    function generateGrid(start, end, btn) {
+        // UI Tabs
+        document.querySelectorAll('.grid-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+
+        // Build Grid
+        const grid = document.getElementById('number-grid');
+        grid.innerHTML = '';
+        for (let i = start; i <= end; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'num-cell';
+            cell.textContent = i;
+            cell.onclick = () => {
+                document.querySelectorAll('.num-cell').forEach(c => c.classList.remove('selected'));
+                cell.classList.add('selected');
+                const w = numToWords(i);
+                setInfo(`${i}: ${w}`); speak(w);
+            };
+            grid.appendChild(cell);
+        }
+        setInfo(`Lihat nombor ${start} hingga ${end}.`);
     }
+
+    /* 2. Pembina Nombor */
+    function loadNumberBuilderActivity(content) {
+        setInfo("Pilih Ratus, Puluh dan Sa untuk bina nombor.");
+        content.innerHTML = `
+            <div class="w-full max-w-3xl text-center">
+                <h3 class="text-3xl font-bold text-green-600 mb-8">🏗️ Pembina Nombor</h3>
+                
+                <div class="flex justify-center gap-4 mb-8">
+                   ${['Ratus', 'Puluh', 'Sa'].map(label => `
+                       <div class="w-1/3">
+                           <label class="block text-green-800 font-bold mb-2 uppercase tracking-wide">${label}</label>
+                           <select id="sel-${label}" onchange="updateBuilder()" class="w-full p-3 rounded-xl border-4 border-green-300 text-2xl font-bold text-center bg-white cursor-pointer focus:border-green-500 focus:outline-none">
+                               ${[...Array(10).keys()].map(i => `<option value="${i}">${i}</option>`).join('')}
+                           </select>
+                       </div>
+                   `).join('')}
+                </div>
+
+                <div class="bg-green-50 rounded-3xl p-8 border-2 border-green-200 shadow-sm">
+                    <div id="build-num" class="text-8xl font-black text-green-600 mb-4">0</div>
+                    <div id="build-word" class="text-2xl font-bold text-slate-600">kosong</div>
+                </div>
+            </div>
+        `;
+        updateBuilder();
+    }
+
+    function updateBuilder() {
+        const r = parseInt(document.getElementById('sel-Ratus').value) || 0;
+        const p = parseInt(document.getElementById('sel-Puluh').value) || 0;
+        const s = parseInt(document.getElementById('sel-Sa').value) || 0;
+        const total = (r * 100) + (p * 10) + s;
+        const w = numToWords(total);
+        
+        document.getElementById('build-num').textContent = total;
+        document.getElementById('build-word').textContent = w;
+        
+        // Debounce speak slightly
+        if(window.buildTimeout) clearTimeout(window.buildTimeout);
+        window.buildTimeout = setTimeout(() => speak(w), 500);
+    }
+
+    /* 3. Penterjemah (Input) */
+    function loadTranslatorActivity(content) {
+        setInfo("Taip nombor (0-1000) untuk lihat ejaannya.");
+        content.innerHTML = `
+            <div class="w-full max-w-md text-center">
+                <h3 class="text-3xl font-bold text-purple-600 mb-8">✍️ Eja Nombor</h3>
+                
+                <input type="number" id="num-input" min="0" max="1000" placeholder="123"
+                       class="w-full text-center text-5xl font-black p-6 border-4 border-purple-300 rounded-3xl focus:border-purple-500 focus:outline-none mb-6"
+                       oninput="runTranslate()">
+                
+                <div id="trans-result" class="min-h-[100px] flex items-center justify-center bg-purple-50 rounded-2xl p-4 border-2 border-purple-100">
+                    <span class="text-slate-400 font-bold text-lg">Menunggu nombor...</span>
+                </div>
+            </div>
+        `;
+    }
+
+    function runTranslate() {
+        const val = document.getElementById('num-input').value;
+        const res = document.getElementById('trans-result');
+        if(!val) { res.innerHTML = '<span class="text-slate-400 font-bold text-lg">...</span>'; return; }
+        
+        let n = parseInt(val);
+        if(n > 1000) n = 1000; 
+        
+        const w = numToWords(n);
+        res.innerHTML = `<span class="text-2xl font-bold text-purple-700 animate-pulse">${w}</span>`;
+        
+        if(window.transTimeout) clearTimeout(window.transTimeout);
+        window.transTimeout = setTimeout(() => speak(w), 800);
+    }
+
+    /* 4. Penjana Rawak */
+    function loadRandomNumberActivity(content) {
+        setInfo("Tekan butang untuk nombor rawak.");
+        content.innerHTML = `
+            <div class="w-full max-w-2xl text-center">
+                <h3 class="text-3xl font-bold text-orange-600 mb-8">🎲 Nombor Rawak</h3>
+                
+                <div id="rand-box" class="bg-orange-50 border-4 border-orange-200 rounded-[3rem] p-10 mb-8 min-h-[300px] flex flex-col items-center justify-center transition-all duration-300">
+                    <div class="text-slate-400 font-bold text-xl">Tekan butang!</div>
+                </div>
+
+                <button onclick="genRandom()" class="btn-3d bg-orange-500 text-white font-bold py-4 px-10 rounded-full text-2xl">
+                    Jana Nombor!
+                </button>
+            </div>
+        `;
+    }
+
+    function genRandom() {
+        const n = Math.floor(Math.random() * 1000) + 1;
+        const w = numToWords(n);
+        const box = document.getElementById('rand-box');
+        
+        // Animation reset
+        box.classList.remove('scale-105');
+        void box.offsetWidth; // trigger reflow
+        box.classList.add('scale-105');
+        
+        box.innerHTML = `
+            <div class="text-9xl font-black text-orange-600 mb-4 drop-shadow-sm">${n}</div>
+            <div class="text-3xl font-bold text-slate-700">${w}</div>
+        `;
+        speak(w);
+    }
+
+    /* 5. Suai Padan */
+    function loadMatchingActivity(content) {
+        setInfo("Seret kad merah ke petak yang betul.");
+        const pairs = [
+            { n: 125, w: "seratus dua puluh lima" },
+            { n: 340, w: "tiga ratus empat puluh" },
+            { n: 802, w: "lapan ratus dua" },
+            { n: 555, w: "lima ratus lima puluh lima" }
+        ];
+        const shuffled = [...pairs].sort(() => Math.random()-0.5);
+        
+        content.innerHTML = `
+            <div class="w-full max-w-5xl">
+                <h3 class="text-3xl font-bold text-red-600 mb-6 text-center">🧩 Suai Padan</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div class="flex flex-col gap-4 items-center justify-center bg-red-50 p-6 rounded-3xl border-2 border-red-100">
+                        <h4 class="font-bold text-red-400 uppercase text-sm mb-2">Seret Nombor Ini</h4>
+                        ${shuffled.map(p => `
+                            <div class="num-card w-32 text-center draggable" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)" data-val="${p.n}">
+                                ${p.n}
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="flex flex-col gap-4 justify-center">
+                        <h4 class="font-bold text-slate-400 uppercase text-sm mb-2 text-center">Letak Di Sini</h4>
+                        ${pairs.map(p => `
+                            <div class="drop-zone w-full p-4 text-lg text-slate-600 bg-white border-2" 
+                                 ondrop="dropMatch(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" data-ans="${p.n}">
+                                ${p.w}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function dropMatch(e) {
+        e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+        if (!draggedElement) return;
+        
+        const val = draggedElement.dataset.val;
+        const ans = e.currentTarget.dataset.ans;
+
+        if(val === ans) {
+            e.currentTarget.innerHTML = `<div class="flex items-center gap-4"><span class="text-3xl font-black text-green-600">${val}</span> <span class="text-green-700 font-bold">Betul!</span></div>`;
+            e.currentTarget.classList.add('drop-zone-filled');
+            draggedElement.remove();
+            speak("Betul!");
+            if(!document.querySelector('.draggable')) { triggerWin(); speak("Tahniah! Semua betul."); }
+        } else {
+            speak("Salah. Cuba lagi.");
+            e.currentTarget.classList.add('shake');
+            setTimeout(() => e.currentTarget.classList.remove('shake'), 500);
+        }
+    }
+
   </script>
 </body>
 </html>
